@@ -1,0 +1,10 @@
+name: PartyManager
+main: parties.partychat
+version: 1.0
+author: DancingCola
+description: none
+commands:
+  party:
+    description: Uses party commands
+  p:
+    description: sends a message to the party

@@ -33,6 +33,7 @@ public class PartyList {
 	public void remove(Party party){
 		parties.remove(party);
 		root.getConfig().set("parties."+party.name, null);
+		root.saveConfig();
 	}
 	
 	public Party getParty(String partyname){

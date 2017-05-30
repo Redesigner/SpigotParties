@@ -1,14 +1,18 @@
 package parties;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 
 public class PartyCommand implements CommandExecutor {
 	
 	private PartyList partyList;
+	private InviteList inviteList;
 	
-	public PartyCommand(PartyList list){
+	public PartyCommand(PartyList list, InviteList invites){
 		partyList = list;
+		inviteList = invites;
 	}
 
 	@Override
@@ -47,6 +51,16 @@ public class PartyCommand implements CommandExecutor {
 							}
 						}
 					}
+					return true;
+				}
+				
+				if(subcommand.equals("accept")){
+					inviteList.accept(player);
+					return true;
+				}
+				
+				if(subcommand.equals("decline")){
+					inviteList.decline(player);
 					return true;
 				}
 				
@@ -109,13 +123,22 @@ public class PartyCommand implements CommandExecutor {
 				}
 				
 				if(subcommand.equals("setcolor")){
+					name = name.toUpperCase();
 					if(!partyList.inAnyParty(id)) {
 						MessageLoader.sendMessageArray(player, "notinparty");
 					}
 					else if(partyList.inAnyParty(id)){
 						if(partyList.getUserParty(id).isOwner(id)){
-							partyList.getUserParty(id).setColor(name);
-							player.sendMessage("Changed party color to: " + name);
+							if(partyList.getUserParty(id).setColor(name)){
+								player.sendMessage("Changed party color to: " + name);
+							}
+							else{
+								player.sendMessage("That is not a valid color, try /party help colors");
+							}
+
+						}
+						else{
+							player.sendMessage("You must be the owner to change the color!");
 						}
 					}
 					return true;
@@ -133,6 +156,70 @@ public class PartyCommand implements CommandExecutor {
 					}
 					return true;
 				}
+				
+				if(subcommand.equals("help") && name.equals("color")){
+					player.sendMessage("Valid party colors:");
+					player.sendMessage(ChatColor.BLACK + "black " +
+					ChatColor.DARK_BLUE + "dark_blue " +
+					ChatColor.DARK_AQUA + "dark_aqua " +
+					ChatColor.DARK_RED + "dark_red " + 
+					ChatColor.DARK_PURPLE + "dark_purple " + 
+					ChatColor.GOLD + "gold " + 
+					ChatColor.GRAY + "gray "+ 
+					ChatColor.DARK_GRAY + "dark_gray " + 
+					ChatColor.BLUE + "blue " + 
+					ChatColor.GREEN + "green " + 
+					ChatColor.AQUA + "aqua " + 
+					ChatColor.RED + "red " + 
+					ChatColor.LIGHT_PURPLE + "light_purple " + 
+					ChatColor.YELLOW + "yellow " + 
+					ChatColor.WHITE + "white");
+				}
+				
+				if(subcommand.equals("kick")){
+					if(!partyList.inAnyParty(id)) {
+						MessageLoader.sendMessageArray(player, "notinparty");
+					}
+					else if(partyList.inAnyParty(id)){
+						if(partyList.getUserParty(id).isOwner(id) && partyList.getUserParty(id).inParty(name)){
+							partyList.getUserParty(id).sendMessage(name + " has been kicked out of the party");
+							partyList.getUserParty(id).removeMember(name);
+							try{
+								Bukkit.getPlayer(name).sendMessage("You have been kicked from the party");
+							}
+							catch(Exception e){
+								System.out.println("[PartyManager] couldn't deliver message! is the user online?");
+							}
+						}
+					}
+					return true;
+				}
+				
+				if(subcommand.equals("invite")){
+					if(!partyList.inAnyParty(id)) {
+						MessageLoader.sendMessageArray(player, "notinparty");
+					}
+					else{
+						try{
+							Player target = Bukkit.getPlayer(name);
+							if(partyList.inAnyParty(name)){
+								player.sendMessage("That player is already in a party");
+								return true;
+							}
+							if(inviteList.hasInvite(target)){
+								player.sendMessage("That player already has a pending invite!");
+								return true;
+							}
+							Invite invite = new Invite(target, partyList.getUserParty(id), id);
+							InviteList.register(invite);
+							invite.display();
+						}
+						catch(Exception e){
+							player.sendMessage("That player doesn't exist");
+						}
+					}
+				}
+				return true;
 			}
 			Player player = (Player) sender;
 			player.sendMessage("Invalid command!");

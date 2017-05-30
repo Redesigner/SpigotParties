@@ -1,5 +1,6 @@
 package parties;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -39,7 +40,7 @@ public class Party {
 		updateScoreboard();
 	}
 
-	public void setColor(String colorName){
+	public boolean setColor(String colorName){
 		try{
 			partyColor = ChatColor.valueOf(colorName);
 			for(String player:Members){
@@ -52,8 +53,10 @@ public class Party {
 		}
 		catch(Exception e){
 			System.out.println("[PartiesManager]Attempt to use an invalid color");
+			return false;
 		}
 		partyList.updateColor(this);
+		return true;
 	}
 	
 	public void updateScoreboard(){
@@ -62,10 +65,9 @@ public class Party {
 			objective = scoreboard.registerNewObjective("test", "test");
 			objective.setDisplayName(partyColor + name);
 			objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-			objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
 			for(String player:Members){
 				if(!isOwner(player)){
-					objective.getScore(player + "   Lv.").setScore(Bukkit.getPlayer(player).getLevel());
+					objective.getScore(player + "  Lv.").setScore(Bukkit.getPlayer(player).getLevel());
 				}
 				try{
 					Bukkit.getPlayer(player).setScoreboard(scoreboard);
@@ -73,6 +75,7 @@ public class Party {
 				catch(Exception e){
 				}
 			}
+			objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
 		}
 		catch(Exception f){
 			//todo
@@ -109,9 +112,16 @@ public class Party {
 			}catch(Exception e){}
 			partyList.updateMembers(this);
 			if(isOwner(player)){
-				for(String playerI:Members){
-					if(!isOwner(playerI)){
-						Members.remove(playerI);
+				Iterator<String> iterator = Members.iterator();
+				while(iterator.hasNext()){
+					String playerName = iterator.next();
+					if(!isOwner(playerName)){
+						try{
+							Bukkit.getPlayer(playerName).setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+							team.removePlayer(Bukkit.getOfflinePlayer(playerName));
+							Bukkit.getPlayer(playerName).setDisplayName(playerName);
+						}catch(Exception e){}
+						iterator.remove();;
 					}
 				}
 				Members.remove(player);
@@ -142,6 +152,15 @@ public class Party {
 				else{
 					Bukkit.getPlayer(recipient).sendMessage(partyColor+"<" + player.getName() +">* " + ChatColor.WHITE + string);
 				}
+			}
+			catch(Exception e){}
+		}
+	}
+	
+	public void sendMessage(String string){
+		for(String recipient: Members){
+			try{
+				Bukkit.getPlayer(recipient).sendMessage(partyColor+"["+name+"]"+ ChatColor.WHITE + string);
 			}
 			catch(Exception e){}
 		}

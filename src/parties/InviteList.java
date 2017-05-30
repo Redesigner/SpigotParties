@@ -9,9 +9,11 @@ import org.bukkit.entity.Player;
 public class InviteList {
 
 	public static ArrayList<Invite> Invites;
+	private PartyList partyList;
 	
-	public InviteList(){
+	public InviteList(PartyList partyList){
 		Invites = new ArrayList<Invite>();
+		this.partyList = partyList;
 	}
 	
 	public static void register(Invite invite){
@@ -63,6 +65,10 @@ public class InviteList {
 		Iterator<Invite> iterator = Invites.iterator();
 		while(iterator.hasNext()){
 			Invite invite = iterator.next();
+			if(partyList.inAnyParty(invite.target.getName())){
+				invite.delete();
+				iterator.remove();
+			}
 			if(invite.isExpired()){
 				try{
 					invite.target.sendMessage("Your invite to "+ invite.getParty().getColor() + invite.getParty().name + ChatColor.WHITE + " has expired");
@@ -71,6 +77,7 @@ public class InviteList {
 				catch(Exception e){
 					System.out.println("[PartiesManager] Couldn't send message! Is the recipient offline?");
 				}
+				invite.delete();
 				iterator.remove();
 			}
 		}

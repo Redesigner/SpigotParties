@@ -16,6 +16,7 @@ public class Party {
 	private String owner;
 	private PartyList partyList;
 	private ChatColor partyColor;
+	private ArrayList<TrackerStand> trackers;
 	
 	// A team for using the scoreboard built in features
 	private Team team;
@@ -30,6 +31,7 @@ public class Party {
 		partyColor = ChatColor.WHITE;
 		partyList = partylist;
 		Members = new ArrayList<String>();
+		trackers = new ArrayList<TrackerStand>();
 		scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 		team = Bukkit.getScoreboardManager().getNewScoreboard().registerNewTeam(name);
 		team.setCanSeeFriendlyInvisibles(true);
@@ -59,26 +61,87 @@ public class Party {
 		return true;
 	}
 	
-	public void updateScoreboard(){
-		try{
-			objective.unregister();
-			objective = scoreboard.registerNewObjective("test", "test");
-			objective.setDisplayName(partyColor + name);
-			objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-			for(String player:Members){
-				if(!isOwner(player)){
-					objective.getScore(player + "  Lv.").setScore(Bukkit.getPlayer(player).getLevel());
-				}
-				try{
-					Bukkit.getPlayer(player).setScoreboard(scoreboard);
-				}
-				catch(Exception e){
-				}
+	
+	private ArrayList<Player> onlinePlayers(){
+		ArrayList<Player> result = new ArrayList<Player>();
+		for(String member:Members){
+			try{
+				result.add(Bukkit.getPlayer(member));
 			}
-			objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
+			catch(Exception e){
+				System.out.println(member + " is offline");
+			}
 		}
-		catch(Exception f){
-			//todo
+		return result;
+	}
+	
+	public void updateScoreboard(){
+		objective.unregister();
+		objective = scoreboard.registerNewObjective("test", "test");
+		objective.setDisplayName(partyColor + name);
+		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+		for(String player:Members){
+			if(!isOwner(player)){
+				try{
+					objective.getScore(player + "  Lv.").setScore(Bukkit.getPlayer(player).getLevel());
+					//Bukkit.getPlayer(player).setScoreboard(scoreboard);
+				}
+				catch (Exception e){}
+			}
+			else{
+				try{
+					objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
+					//Bukkit.getPlayer(player).setScoreboard(scoreboard);
+				}
+				catch(Exception e){}
+			}
+		}
+
+	}
+	
+	//TODO: CREATE A SEPARATE ONLINE LIST
+	//should be called less often than update
+	public void createTrackers(){
+		//System.out.println("creating trackers");
+		for(Player owner:onlinePlayers()){
+			for(Player target:onlinePlayers()){
+				try{
+					if(!owner.equals(target)){
+						if(!hasTracker(owner, target)){
+							TrackerStand newTracker = new TrackerStand(owner, target);
+							trackers.add(newTracker);
+							//System.out.println("Created new tracker");
+						}
+					}
+				}
+				catch (Exception e){}
+			}
+		}
+	}
+	
+	private boolean hasTracker(Player owner, Player target){
+		for(TrackerStand tracker:trackers){
+			if(tracker.owner == owner && tracker.target == target){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void updateTrackers(){
+		Iterator<TrackerStand> iterator = trackers.iterator();
+		while(iterator.hasNext()){
+			TrackerStand tracker = iterator.next();
+			if(!tracker.updatePosition(partyColor)){
+				//System.out.println("deleting tracker");
+				tracker.delete();
+				iterator.remove();
+			}
+			else if(!inParty(tracker.target.getName()) || !inParty(tracker.owner.getName())){
+				System.out.println("deleting tracker");
+				tracker.delete();
+				iterator.remove();
+			}
 		}
 	}
 	

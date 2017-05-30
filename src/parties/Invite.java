@@ -14,7 +14,7 @@ public class Invite {
 	private Party owner;
 	private String sender;
 	private Scoreboard scoreboard;
-	final int MAX_INVITE_TIME = 300;
+	final int MAX_INVITE_TIME = 30;
 	private int expireTime;
 	
 	public Invite(Player player, Party party, String string){

@@ -77,6 +77,19 @@ public class PartyList {
 			party.updateScoreboard();
 		}
 	}
+	
+	public void updateTrackers(){
+		for(Party party:parties){
+			party.updateTrackers();
+		}
+	}
+	
+	public void createTrackers(){
+		for(Party party:parties){
+			party.createTrackers();
+		}
+	}
+	
 	public void updateOwner(Party party){
 		root.getConfig().set("parties." + party.name + ".owner",
 				party.getOwner());

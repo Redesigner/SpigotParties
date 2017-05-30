@@ -19,7 +19,7 @@ public class PartyMessage implements CommandExecutor{
 			Player player = (Player) sender;
 			String message = "";
 			for(String text:args){
-				message += text;
+				message += text + " ";
 			}
 			partyList.getUserParty(player.getName()).message(message, player);
 		}

@@ -13,7 +13,7 @@ public class partychat extends JavaPlugin{
 	public void onEnable() {
 		partyList = new PartyList(this);
 		messageLoader = new MessageLoader(this);
-		inviteList = new InviteList();
+		inviteList = new InviteList(partyList);
 		getCommand("party").setExecutor(new PartyCommand(partyList, inviteList));
 		getCommand("p").setExecutor(new PartyMessage(partyList));
 	    loadConfiguration();
@@ -24,13 +24,15 @@ public class partychat extends JavaPlugin{
 	    Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable(){
 	    	public void run(){
 	    		partyList.updateScoreboards();
-	    	}
-	    }, 0,200);
-	    Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable(){
-	    	public void run(){
+	    		partyList.updateTrackers();
 	    		inviteList.update();
 	    	}
-	    }, 0L, 20L);
+	    }, 0,1L);
+	    Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable(){
+	    	public void run(){
+	    		partyList.createTrackers();
+	    	}
+	    }, 0L, 200L);
 	    
 	}
 	
@@ -39,7 +41,7 @@ public class partychat extends JavaPlugin{
 	}
 	@Override
 	public void onDisable() {
-		
+	     saveConfig();
 	}
 	public void loadConfiguration(){
 	     getConfig().options().copyDefaults(true);

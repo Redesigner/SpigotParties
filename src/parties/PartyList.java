@@ -72,6 +72,13 @@ public class PartyList {
 		return null;
 	}
 	
+	
+	public void deleteAllTrackers(){
+		for(Party party:parties){
+			party.clearTrackers();
+		}
+	}
+	
 	public void updateScoreboards(){
 		for(Party party:parties){
 			party.updateScoreboard();
@@ -81,12 +88,6 @@ public class PartyList {
 	public void updateTrackers(){
 		for(Party party:parties){
 			party.updateTrackers();
-		}
-	}
-	
-	public void createTrackers(){
-		for(Party party:parties){
-			party.createTrackers();
 		}
 	}
 	
@@ -113,21 +114,14 @@ public class PartyList {
 	public void loadFile(){
 		System.out.println("[PartyManager] Loading parties...");
 		Configuration config = root.getConfig();
-		try{
-			ConfigurationSection partiesConfig = config.getConfigurationSection("parties");
-			for(String partyname:partiesConfig.getKeys(false)){
-				//System.out.println(config.getString("parties." + partyname + ".color") + "party color");
-				//System.out.println(config.getString("parties." + partyname + ".owner"));
-				Party newParty = new Party(partyname, this);
-				newParty.loadMembers(config.getStringList("parties." + partyname +".members"));
-				newParty.setOwner(config.getString("parties." + partyname + ".owner"));
-				newParty.setColor(config.getString("parties." + partyname + ".color"));
-				register(newParty);
-			}
-		}
-		catch(Exception e){
-			root.getConfig().set("parties.default","");
-			root.saveConfig();
+		ConfigurationSection partiesConfig = config.getConfigurationSection("parties");
+		for(String partyname:partiesConfig.getKeys(false)){
+			System.out.println("[PartyManager]" + partyname + " loaded");
+			Party newParty = new Party(partyname, this);
+			newParty.loadMembers(config.getStringList("parties." + partyname +".members"));
+			newParty.setOwner(config.getString("parties." + partyname + ".owner"));
+			newParty.setColor(config.getString("parties." + partyname + ".color"));
+			register(newParty);
 		}
 	}
 }

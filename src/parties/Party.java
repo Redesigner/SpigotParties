@@ -17,11 +17,12 @@ public class Party {
 	private PartyList partyList;
 	private ChatColor partyColor;
 	private ArrayList<TrackerStand> trackers;
+	private ArrayList<Player> onlinePlayers;
 	
 	// A team for using the scoreboard built in features
 	private Team team;
 	private Objective objective;
-	private Scoreboard scoreboard;
+	public Scoreboard scoreboard;
 	
 	public Party(String namearg, PartyList partylist){
 		if(namearg.length()>16){
@@ -32,11 +33,17 @@ public class Party {
 		partyList = partylist;
 		Members = new ArrayList<String>();
 		trackers = new ArrayList<TrackerStand>();
+		onlinePlayers = new ArrayList<Player>();
 		scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 		team = Bukkit.getScoreboardManager().getNewScoreboard().registerNewTeam(name);
 		team.setCanSeeFriendlyInvisibles(true);
 		team.setAllowFriendlyFire(false);
-		objective = scoreboard.registerNewObjective("test", "test");
+		Objective health = scoreboard.registerNewObjective("healthParty", "health");
+		health.setDisplayName("Health ");
+		health.setDisplaySlot(DisplaySlot.BELOW_NAME);
+		Objective levels = scoreboard.registerNewObjective("levelParty", "level");
+		levels.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+		objective = scoreboard.registerNewObjective("level", "dummy");
 		objective.setDisplayName(partyColor + name);
 		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 		updateScoreboard();
@@ -45,11 +52,9 @@ public class Party {
 	public boolean setColor(String colorName){
 		try{
 			partyColor = ChatColor.valueOf(colorName);
-			for(String player:Members){
-				try{
-					Bukkit.getPlayer(player).setPlayerListName(partyColor+player);
-				}catch(Exception f){
-					System.out.println("[PartiesManager] Couldn't set player's name");
+			for(Player player:onlinePlayers){
+				if(player.isOnline()){
+					player.setPlayerListName(partyColor+player.getName());
 				}
 			}
 		}
@@ -62,70 +67,67 @@ public class Party {
 	}
 	
 	
-	private ArrayList<Player> onlinePlayers(){
-		ArrayList<Player> result = new ArrayList<Player>();
-		for(String member:Members){
-			try{
-				result.add(Bukkit.getPlayer(member));
-			}
-			catch(Exception e){
-				System.out.println(member + " is offline");
-			}
-		}
-		return result;
+	public ArrayList<Player> getOnlinePlayers(){
+		return onlinePlayers;
 	}
 	
+	public void login(Player player){
+		onlinePlayers.add(player);
+		player.setPlayerListName(partyColor + player.getName());
+		player.setScoreboard(scoreboard);
+		createTrackersOf(player);
+		createTrackersFor(player);
+	}
+	
+	public void logout(Player player){
+		onlinePlayers.remove(player);
+		player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+		player.setDisplayName(player.getName());
+		System.out.println("Player has logged out of party " + name);
+		System.out.println(onlinePlayers.toString());
+	}
+	
+	
 	public void updateScoreboard(){
+		Objective objectiveUpdate = null;
+		if(objective.getName().equals("level")){
+			objectiveUpdate = scoreboard.registerNewObjective("levelBuffer", "dummy");
+		}
+		else if(objective.getName().equals("levelBuffer")){
+			objectiveUpdate = scoreboard.registerNewObjective("level", "dummy");
+		}
+		objectiveUpdate.setDisplayName(partyColor + name);
+		objectiveUpdate.setDisplaySlot(DisplaySlot.SIDEBAR);
 		objective.unregister();
-		objective = scoreboard.registerNewObjective("test", "test");
-		objective.setDisplayName(partyColor + name);
-		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-		for(String player:Members){
-			if(!isOwner(player)){
-				try{
-					objective.getScore(player + "  Lv.").setScore(Bukkit.getPlayer(player).getLevel());
-					//Bukkit.getPlayer(player).setScoreboard(scoreboard);
-				}
-				catch (Exception e){}
+		objective = objectiveUpdate;
+		//System.out.println(onlinePlayers.toString());
+		for(Player player:getOnlinePlayers()){
+			if(!isOwner(player.getName())){
+				objective.getScore(player.getName() + "  Lv.").setScore(player.getLevel());
 			}
 			else{
-				try{
-					objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
-					//Bukkit.getPlayer(player).setScoreboard(scoreboard);
-				}
-				catch(Exception e){}
+				objective.getScore("\u2605"+owner+"\u2605  Lv.").setScore(Bukkit.getPlayer(owner).getLevel());
 			}
 		}
 
 	}
 	
-	//TODO: CREATE A SEPARATE ONLINE LIST
-	//should be called less often than update
-	public void createTrackers(){
-		//System.out.println("creating trackers");
-		for(Player owner:onlinePlayers()){
-			for(Player target:onlinePlayers()){
-				try{
-					if(!owner.equals(target)){
-						if(!hasTracker(owner, target)){
-							TrackerStand newTracker = new TrackerStand(owner, target);
-							trackers.add(newTracker);
-							//System.out.println("Created new tracker");
-						}
-					}
-				}
-				catch (Exception e){}
+	public void createTrackersFor(Player owner){
+		for(Player target:getOnlinePlayers()){
+			if(!owner.equals(target)){
+				TrackerStand newTracker = new TrackerStand(owner, target);
+				trackers.add(newTracker);
 			}
 		}
 	}
 	
-	private boolean hasTracker(Player owner, Player target){
-		for(TrackerStand tracker:trackers){
-			if(tracker.owner == owner && tracker.target == target){
-				return true;
+	public void createTrackersOf(Player target){
+		for(Player owner:getOnlinePlayers()){
+			if(!owner.equals(target)){
+				TrackerStand newTracker = new TrackerStand(owner, target);
+				trackers.add(newTracker);
 			}
 		}
-		return false;
 	}
 	
 	public void updateTrackers(){
@@ -133,15 +135,22 @@ public class Party {
 		while(iterator.hasNext()){
 			TrackerStand tracker = iterator.next();
 			if(!tracker.updatePosition(partyColor)){
-				//System.out.println("deleting tracker");
 				tracker.delete();
 				iterator.remove();
 			}
 			else if(!inParty(tracker.target.getName()) || !inParty(tracker.owner.getName())){
-				System.out.println("deleting tracker");
+				//System.out.println("deleting tracker");
 				tracker.delete();
 				iterator.remove();
 			}
+		}
+	}
+	
+	public void clearTrackers(){
+		Iterator<TrackerStand> iterator = trackers.iterator();
+		while(iterator.hasNext()){
+			iterator.next().delete();
+			iterator.remove();
 		}
 	}
 	
@@ -156,10 +165,10 @@ public class Party {
 			team.addPlayer(Bukkit.getOfflinePlayer(player));
 			partyList.updateMembers(this);
 			try{
-				Bukkit.getPlayer(player).setScoreboard(scoreboard);
+				Bukkit.getPlayer(player).isOnline();
+				login(Bukkit.getPlayer(player));
 			}
 			catch(Exception e){
-	
 			}
 		}
 		return false;
@@ -179,11 +188,9 @@ public class Party {
 				while(iterator.hasNext()){
 					String playerName = iterator.next();
 					if(!isOwner(playerName)){
-						try{
-							Bukkit.getPlayer(playerName).setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-							team.removePlayer(Bukkit.getOfflinePlayer(playerName));
-							Bukkit.getPlayer(playerName).setDisplayName(playerName);
-						}catch(Exception e){}
+						if(Bukkit.getPlayer(playerName).isOnline()){
+							logout(Bukkit.getPlayer(playerName));
+						}
 						iterator.remove();;
 					}
 				}

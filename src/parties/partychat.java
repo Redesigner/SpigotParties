@@ -28,23 +28,17 @@ public class partychat extends JavaPlugin{
 	    		inviteList.update();
 	    	}
 	    }, 0,1L);
-	    Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable(){
-	    	public void run(){
-	    		partyList.createTrackers();
-	    	}
-	    }, 0L, 200L);
 	    
+	    getServer().getPluginManager().registerEvents(new LoginEvent(partyList), this);
 	}
 	
-	public void onPlayerJoin(){
-		
-	}
 	@Override
 	public void onDisable() {
-	     saveConfig();
+		partyList.deleteAllTrackers();
+	    saveConfig();
 	}
 	public void loadConfiguration(){
-	     getConfig().options().copyDefaults(true);
-	     saveConfig();
+	    getConfig().options().copyDefaults(true);
+	    saveConfig();
 	}
 }

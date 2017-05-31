@@ -117,7 +117,7 @@ public class PartyList {
 		ConfigurationSection partiesConfig = config.getConfigurationSection("parties");
 		for(String partyname:partiesConfig.getKeys(false)){
 			System.out.println("[PartyManager]" + partyname + " loaded");
-			Party newParty = new Party(partyname, this);
+			Party newParty = new Party(partyname, this, root);
 			newParty.loadMembers(config.getStringList("parties." + partyname +".members"));
 			newParty.setOwner(config.getString("parties." + partyname + ".owner"));
 			newParty.setColor(config.getString("parties." + partyname + ".color"));

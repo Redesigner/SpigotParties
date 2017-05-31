@@ -4,15 +4,18 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class PartyCommand implements CommandExecutor {
 	
 	private PartyList partyList;
 	private InviteList inviteList;
+	private JavaPlugin root;
 	
-	public PartyCommand(PartyList list, InviteList invites){
+	public PartyCommand(PartyList list, InviteList invites, JavaPlugin root){
 		partyList = list;
 		inviteList = invites;
+		this.root = root;
 	}
 
 	@Override
@@ -81,7 +84,7 @@ public class PartyCommand implements CommandExecutor {
 						MessageLoader.sendMessageArray(player, "alreadyinparty");
 					}
 					else if(partyList.getParty(name)==null){
-						Party newParty = new Party(name, partyList);
+						Party newParty = new Party(name, partyList, root);
 						partyList.register(newParty);
 						newParty.addMember(id);
 						newParty.setOwner(id);

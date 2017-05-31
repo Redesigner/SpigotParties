@@ -6,6 +6,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.*;
 
 public class Party {
@@ -23,11 +24,13 @@ public class Party {
 	private Team team;
 	private Objective objective;
 	public Scoreboard scoreboard;
+	private JavaPlugin root;
 	
-	public Party(String namearg, PartyList partylist){
+	public Party(String namearg, PartyList partylist, JavaPlugin root){
 		if(namearg.length()>16){
 			namearg = namearg.substring(0,15);
 		}
+		this.root = root;
 		name = namearg;
 		partyColor = ChatColor.WHITE;
 		partyList = partylist;
@@ -114,8 +117,8 @@ public class Party {
 	
 	public void createTrackersFor(Player owner){
 		for(Player target:getOnlinePlayers()){
-			if(!owner.equals(target)){
-				TrackerStand newTracker = new TrackerStand(owner, target);
+			if(!owner.getName().equals(target.getName())){
+				TrackerStand newTracker = new TrackerStand(owner, target, root);
 				trackers.add(newTracker);
 			}
 		}
@@ -123,8 +126,8 @@ public class Party {
 	
 	public void createTrackersOf(Player target){
 		for(Player owner:getOnlinePlayers()){
-			if(!owner.equals(target)){
-				TrackerStand newTracker = new TrackerStand(owner, target);
+			if(!owner.getName().equals(target.getName())){
+				TrackerStand newTracker = new TrackerStand(owner, target, root);
 				trackers.add(newTracker);
 			}
 		}
@@ -169,6 +172,7 @@ public class Party {
 				login(Bukkit.getPlayer(player));
 			}
 			catch(Exception e){
+				System.out.println(e);
 			}
 		}
 		return false;
